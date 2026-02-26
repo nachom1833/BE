@@ -1,0 +1,106 @@
+{
+  "nav": {
+    "capabilities": "Capabilities",
+    "industries": "Industries",
+    "method": "Method",
+    "contact": "Contact",
+    "talk": "Let's Talk"
+  },
+  "hero": {
+    "title": "We turn brand experiences into measurable impact.",
+    "subtitle": "Retail architecture · Strategic branding · Activations · Data-driven execution",
+    "primary": "Let's Talk",
+    "secondary": "Discover our method"
+  },
+  "capabilities": {
+    "title": "Capabilities",
+    "intro": "Integrated execution across design, strategy and performance.",
+    "items": [
+      {
+        "title": "Retail & Spatial Design",
+        "description": "Store formats and environments designed to align with strategy and improve conversion across every customer touchpoint."
+      },
+      {
+        "title": "Brand Strategy",
+        "description": "Brand systems built on positioning clarity, differentiated value and long-term business direction."
+      },
+      {
+        "title": "Activations & Experiences",
+        "description": "On-ground and hybrid activations that connect audiences with brands through measurable participation."
+      },
+      {
+        "title": "Data & Automation",
+        "description": "Operational intelligence and automation flows that support faster decisions and campaign precision."
+      },
+      {
+        "title": "Content & Performance",
+        "description": "Content frameworks and media optimization that move from visibility to accountable growth outcomes."
+      }
+    ]
+  },
+  "industries": {
+    "title": "Industries",
+    "items": [
+      "Sports Retail",
+      "Lifestyle",
+      "Corporate",
+      "Consumer Brands"
+    ]
+  },
+  "method": {
+    "title": "BE Method™",
+    "subtitle": "Brand × Experience × Business",
+    "steps": [
+      "Brief & Benchmark",
+      "Brand Core",
+      "Design & Build",
+      "Activation",
+      "Measure & Optimize"
+    ]
+  },
+  "data": {
+    "headline": "Creativity powered by measurable intelligence.",
+    "metrics": [
+      {
+        "label": "Average conversion uplift",
+        "value": "+28%"
+      },
+      {
+        "label": "Campaign deployment speed",
+        "value": "2.4x"
+      },
+      {
+        "label": "Retail engagement increase",
+        "value": "+41%"
+      }
+    ]
+  },
+  "cta": {
+    "headline": "Growth is engineered.",
+    "subtitle": "Let's build your next brand experience.",
+    "button": "Let's Talk"
+  },
+  "footer": {
+    "email": "contact@bestudio.com",
+    "linkedin": "LinkedIn"
+  },
+  "beMethod": {
+    "label": "Methodology",
+    "title": "BE Method™",
+    "subtitle": "Where brand strategy meets spatial execution.",
+    "steps": [
+      {
+        "title": "Brand Intelligence",
+        "description": "We decode market context, behavioral data, and spatial constraints to define strategic positioning."
+      },
+      {
+        "title": "Experience Architecture",
+        "description": "We translate strategy into physical and digital environments that drive engagement and flow."
+      },
+      {
+        "title": "Measurable Impact",
+        "description": "We integrate analytics and retail performance metrics to ensure execution delivers results."
+      }
+    ]
+  }
+}

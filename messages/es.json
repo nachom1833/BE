@@ -1,0 +1,106 @@
+{
+  "nav": {
+    "capabilities": "Capacidades",
+    "industries": "Industrias",
+    "method": "Método",
+    "contact": "Contacto",
+    "talk": "Hablemos"
+  },
+  "hero": {
+    "title": "Transformamos experiencias de marca en impacto medible.",
+    "subtitle": "Arquitectura retail · Branding estratégico · Activaciones · Ejecución impulsada por datos",
+    "primary": "Hablemos",
+    "secondary": "Descubrir nuestro método"
+  },
+  "capabilities": {
+    "title": "Capacidades",
+    "intro": "Ejecución integrada entre diseño, estrategia y performance.",
+    "items": [
+      {
+        "title": "Diseño Retail y Espacial",
+        "description": "Formatos de tienda y entornos alineados con la estrategia para mejorar la conversión en cada punto de contacto."
+      },
+      {
+        "title": "Estrategia de Marca",
+        "description": "Sistemas de marca construidos sobre posicionamiento claro, valor diferencial y dirección de negocio sostenida."
+      },
+      {
+        "title": "Activaciones y Experiencias",
+        "description": "Activaciones presenciales e híbridas que conectan audiencias con marcas mediante participación medible."
+      },
+      {
+        "title": "Datos y Automatización",
+        "description": "Inteligencia operativa y flujos de automatización que permiten decisiones más rápidas y precisas."
+      },
+      {
+        "title": "Contenido y Performance",
+        "description": "Marcos de contenido y optimización de medios orientados a resultados de crecimiento verificables."
+      }
+    ]
+  },
+  "industries": {
+    "title": "Industrias",
+    "items": [
+      "Retail Deportivo",
+      "Lifestyle",
+      "Corporativo",
+      "Marcas de Consumo"
+    ]
+  },
+  "method": {
+    "title": "BE Method™",
+    "subtitle": "Marca × Experiencia × Negocio",
+    "steps": [
+      "Brief y Benchmark",
+      "Núcleo de Marca",
+      "Diseño y Desarrollo",
+      "Activación",
+      "Medición y Optimización"
+    ]
+  },
+  "data": {
+    "headline": "Creatividad impulsada por inteligencia medible.",
+    "metrics": [
+      {
+        "label": "Mejora promedio de conversión",
+        "value": "+28%"
+      },
+      {
+        "label": "Velocidad de despliegue",
+        "value": "2.4x"
+      },
+      {
+        "label": "Aumento de engagement retail",
+        "value": "+41%"
+      }
+    ]
+  },
+  "cta": {
+    "headline": "El crecimiento se diseña.",
+    "subtitle": "Construyamos tu próxima experiencia de marca.",
+    "button": "Hablemos"
+  },
+  "footer": {
+    "email": "contacto@bestudio.com",
+    "linkedin": "LinkedIn"
+  },
+  "beMethod": {
+    "label": "Metodología",
+    "title": "BE Method™",
+    "subtitle": "Donde la estrategia de marca se encuentra con la ejecución espacial.",
+    "steps": [
+      {
+        "title": "Inteligencia de Marca",
+        "description": "Decodificamos el contexto de mercado, los datos de comportamiento y las restricciones espaciales para definir el posicionamiento estratégico."
+      },
+      {
+        "title": "Arquitectura de Experiencia",
+        "description": "Traducimos la estrategia en entornos físicos y digitales que impulsan la interacción y el flujo."
+      },
+      {
+        "title": "Impacto Medible",
+        "description": "Integramos analítica y métricas de performance retail para asegurar que la ejecución entregue resultados."
+      }
+    ]
+  }
+}
