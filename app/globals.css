@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-primary: #f5f5f5;
+  --color-bg-secondary: #ffffff;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #4b5563;
+  --color-accent: #ff6f61;
+  --color-border: #e5e7eb;
+  --color-muted: #9ca3af;
+  --color-deep-blue: #0f172a;
+}
+
+.dark {
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #111827;
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-accent: #ff6f61;
+  --color-border: #1f2937;
+  --color-muted: #6b7280;
+  --color-deep-blue: #0f172a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-bg-primary text-text-primary antialiased;
+  font-family: var(--font-primary), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-primary), sans-serif;
+}
+
+p,
+span,
+a,
+button,
+li {
+  font-family: var(--font-secondary), sans-serif;
+}
+
+.container-shell {
+  @apply mx-auto w-full max-w-[1280px] px-6 md:px-12;
+}
+
+.section-shell {
+  @apply mx-auto w-full max-w-[1280px] px-6 md:px-12;
+}
+
+.section-pad {
+  @apply py-16 md:py-24;
+}
+
+.type-h1 {
+  @apply text-5xl font-bold tracking-tight md:text-6xl lg:text-7xl;
+}
+
+.type-h2 {
+  @apply text-3xl font-semibold md:text-4xl;
+}
+
+.type-h3 {
+  @apply text-xl font-semibold md:text-2xl;
+}
+
+.type-body-lg {
+  @apply text-lg;
+}
+
+.type-body {
+  @apply text-base;
+}
+
+.type-small {
+  @apply text-sm;
+}
