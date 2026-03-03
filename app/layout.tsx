@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   title: "BE Studio | Strategic Brand & Retail Experience Studio",
   description:
     "BE Studio creates strategic brand and retail experiences engineered for measurable business impact.",
+  icons: {
+    icon: "data:,"
+  },
   openGraph: {
     title: "BE Studio",
     description:
