@@ -1,22 +1,6 @@
 import type { Metadata } from "next";
-import { Lato, Poppins } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-primary",
-  display: "swap"
-});
-
-const lato = Lato({
-  subsets: ["latin"],
-  // only supported weights for Lato: 100, 300, 400, 700, 900
-  weight: ["400", "700"],
-  variable: "--font-secondary",
-  display: "swap"
-});
 
 export const metadata: Metadata = {
   title: "BE Studio | Strategic Brand & Retail Experience Studio",
@@ -38,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.variable} ${lato.variable} bg-bg-primary text-text-primary`}>
+      <body className="bg-bg-primary text-text-primary">
         <Providers>{children}</Providers>
       </body>
     </html>
