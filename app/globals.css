@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+@import "tw-animate-css";
+
+/* custom keyframes used by apple liquid glass switcher */
+@keyframes scaleToggle {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.1 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes scaleToggle2 {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.2 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes scaleToggle3 {
+  0% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 1.1 1;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+
+/* basic utility rules for the theme switcher component */
+.switcher {
+  @apply inline-flex items-center gap-2;
+  position: relative;
+}
+.switcher__option {
+  @apply relative cursor-pointer;
+}
+.switcher__input {
+  @apply absolute inset-0 w-full h-full opacity-0 cursor-pointer;
+}
+/* the filter div stays hidden as it is only needed for the SVG filter definitions */
+.switcher__filter {
+  display: none;
+}
+
 :root {
   --font-primary: "Poppins", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-secondary: "Lato", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
