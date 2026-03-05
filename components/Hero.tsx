@@ -1,9 +1,12 @@
 "use client";
 
-import { memo } from "react";
+import { memo, Suspense } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useI18n } from "@/lib/i18n";
+
+const HeroScene = dynamic(() => import("@/components/HeroScene"), { ssr: false });
 
 const container = {
   hidden: { opacity: 0 },
@@ -31,6 +34,9 @@ function HeroComponent() {
         src="https://cdn.coverr.co/videos/coverr-modern-architecture-1579/1080p.mp4"
       />
       <div className="absolute inset-0 z-10 bg-[#0f172a]/40" />
+      <Suspense fallback={null}>
+        <HeroScene />
+      </Suspense>
 
       <div className="relative z-20 mx-auto flex h-full w-full max-w-[1280px] items-center px-6 md:px-12">
         <motion.div
