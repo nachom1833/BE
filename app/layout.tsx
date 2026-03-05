@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { SITE_URL } from "./lib/site-url";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "BE Studio | Strategic Brand & Retail Experience Studio",
   description:
     "BE Studio creates strategic brand and retail experiences engineered for measurable business impact.",
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
     siteName: "BE Studio",
     images: [
       {
-        url: "https://yourdomain.com/hero-poster.svg",
+        url: new URL("/hero-poster.svg", SITE_URL).toString(),
         width: 1200,
         height: 630,
         alt: "BE Studio Hero Image",
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
     title: "BE Studio | Strategic Brand & Retail Experience Studio",
     description:
       "BE Studio creates strategic brand and retail experiences engineered for measurable business impact.",
-    images: ["https://yourdomain.com/hero-poster.svg"],
+    images: [new URL("/hero-poster.svg", SITE_URL).toString()],
   },
 };
 

@@ -1,11 +1,10 @@
 import { MetadataRoute } from "next";
-
-const siteUrl = process.env.SITE_URL || "https://yourdomain.com";
+import { SITE_URL } from "./lib/site-url";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: siteUrl,
+      url: SITE_URL,
       lastModified: new Date(),
     },
     // add more routes if needed
