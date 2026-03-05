@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
@@ -17,22 +17,55 @@ const item = {
 
 function HeroComponent() {
   const { t } = useI18n();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    const attemptAutoplay = async () => {
+      try {
+        await video.play();
+        setAutoplayBlocked(false);
+      } catch {
+        setAutoplayBlocked(true);
+      }
+    };
+
+    attemptAutoplay();
+  }, []);
 
   return (
     <section id="home" className="relative h-[100svh] overflow-hidden md:h-screen" aria-label="Hero section">
       <video
-        className="absolute inset-0 z-0 h-full w-full object-cover"
+        ref={videoRef}
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover"
         autoPlay
         muted
         loop
         playsInline
         preload="metadata"
         poster="/hero-poster.svg"
-        src="https://cdn.coverr.co/videos/coverr-modern-architecture-1579/1080p.mp4"
+        src="/hero-video.mp4"
+        aria-hidden="true"
+        onPlay={() => setAutoplayBlocked(false)}
+        onError={() => setAutoplayBlocked(true)}
       />
-      <div className="absolute inset-0 z-10 bg-[#0f172a]/40" />
+      <div className="pointer-events-none absolute inset-0 z-10 bg-[#0f172a]/40" />
 
-      <div className="relative z-20 mx-auto flex h-full w-full max-w-[1280px] items-center px-6 md:px-12">
+      {autoplayBlocked ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 mx-auto flex max-w-[1280px] px-6 md:px-12">
+          <p className="rounded bg-black/45 px-3 py-2 text-xs font-medium uppercase tracking-wide text-white/90 md:text-sm">
+            Background video unavailable — hero poster shown.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="relative z-30 mx-auto flex h-full w-full max-w-[1280px] items-center px-6 md:px-12">
         <motion.div
           initial="hidden"
           animate="visible"
