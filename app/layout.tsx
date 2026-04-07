@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     siteName: "BE Studio",
     images: [
       {
-        url: "https://yourdomain.com/hero-poster.svg",
+        url: "https://be-studio-site.vercel.app/hero-poster.svg",
         width: 1200,
         height: 630,
         alt: "BE Studio Hero Image",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     title: "BE Studio | Strategic Brand & Retail Experience Studio",
     description:
       "BE Studio creates strategic brand and retail experiences engineered for measurable business impact.",
-    images: ["https://yourdomain.com/hero-poster.svg"],
+    images: ["https://be-studio-site.vercel.app/hero-poster.svg"],
   },
 };
 

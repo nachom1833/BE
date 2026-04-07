@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simón Servicios Ortopédicos - Ficha Digital</title>
+
+    <!-- CDN Dependencies -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* =============================================
+           SAFARI / iOS / iPadOS COMPATIBILITY FIXES
+           ============================================= */
+
+        /* FIX: Prevent iOS Safari auto-zoom on input focus (requires font-size >= 16px) */
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            font-size: 16px !important;
+            -webkit-appearance: none;
+            border-radius: 0;
+        }
+
+        /* FIX: iOS date input needs explicit styling */
+        input[type="date"] {
+            -webkit-appearance: none;
+            appearance: none;
+            min-height: 44px;
+            padding: 8px 4px;
+        }
+
+        /* FIX: Smooth momentum scrolling on iOS */
+        .overflow-auto, .overflow-y-auto, .overflow-scroll {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* FIX: Flex gap fallback for Safari < 14.1 */
+        .flex.gap-2 > * + * { margin-left: 0.5rem; }
+        .flex.gap-3 > * + * { margin-left: 0.75rem; }
+        .flex.gap-4 > * + * { margin-left: 1rem; }
+        /* Override with gap if supported */
+        @supports (gap: 0px) {
+            .flex.gap-2 > * + * { margin-left: 0; }
+            .flex.gap-3 > * + * { margin-left: 0; }
+            .flex.gap-4 > * + * { margin-left: 0; }
+        }
+
+        /* =============================================
+           ORIGINAL STYLES
+           ============================================= */
+
+        /* Custom iPad/Touch optimizations */
+        input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-right: 0.5rem;
+            /* FIX: Checkbox needs -webkit-appearance on iOS */
+            -webkit-appearance: checkbox;
+        }
+
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* Canvas container */
+        .canvas-container {
+            margin: 0 auto;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: white;
+            touch-action: none;
+            /* FIX: Prevent iOS bounce scroll inside canvas */
+            -webkit-overflow-scrolling: auto;
+        }
+
+        /* Urgente functionality */
+        .is-urgent-bg {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+        }
+
+        .is-urgent-text {
+            color: #dc2626 !important;
+            font-weight: 800 !important;
+        }
+
+        /* Print/Export visibility */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* FIX: Arbitrary Tailwind values don't work on CDN v2 - replace with real CSS */
+        #hallazgosList {
+            min-height: 50px;
+        }
+        #fileName {
+            max-width: 200px;
+        }
+        .dot-icon {
+            font-size: 8px;
+        }
+        .item-text-editable {
+            min-height: 1.25rem;
+        }
+
+        /* General Utils */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            /* FIX: Segoe UI not available on iOS - use system-ui first */
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        }
+
+        /* FIX: Active state for buttons (iOS doesn't fire :active properly on tap) */
+        button:active, .touch-btn:active {
+            opacity: 0.7;
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-2 md:p-6 text-gray-800">
+
+    <!-- Top Bar: Load/Save Project -->
+    <div class="max-w-7xl mx-auto flex justify-end gap-3 mb-4 no-print">
+        <label
+            class="bg-gray-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-gray-700 flex items-center shadow-sm">
+            <i class="fas fa-folder-open mr-2"></i> Cargar Proyecto
+            <input type="file" id="loadJsonInput" class="hidden" accept=".json" onchange="loadProject(this)">
+        </label>
+        <button onclick="exportJSON()"
+            class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-black flex items-center shadow-sm">
+            <i class="fas fa-save mr-2"></i> Guardar Proyecto
+        </button>
+        <button onclick="clearOrder()"
+            class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center shadow-sm">
+            <i class="fas fa-redo mr-2"></i> Limpiar Orden
+        </button>
+    </div>
+
+    <!-- Main Card -->
+    <div id="ficha-container"
+        class="max-w-7xl mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-gray-200">
+
+        <!-- Header -->
+        <header class="mb-8 border-b-2 border-gray-100 pb-6">
+            <!-- Row 1: Logo + Paciente + Consultorio + Fechas -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+                <!-- Logo -->
+                <div class="md:col-span-2 flex items-center justify-center md:justify-start">
+                    <div class="text-gray-400 text-center leading-tight">
+                        <i class="fas fa-shoe-prints text-3xl mb-1"></i><br>
+                        <span class="font-bold text-sm">SIMÓN<br>ORTOPEDIA</span>
+                    </div>
+                </div>
+
+                <!-- Paciente + Consultorio -->
+                <div class="md:col-span-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Paciente</label>
+                        <input type="text" id="pacienteNombre"
+                            class="w-full text-lg font-semibold border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 bg-transparent placeholder-slate-300"
+                            placeholder="Apellido y Nombre">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Consultorio / Deriva</label>
+                        <input type="text" id="consultorio"
+                            class="w-full text-lg border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1 bg-transparent"
+                            placeholder="-">
+                    </div>
+                </div>
+
+                <!-- Fechas -->
+                <div class="md:col-span-4 grid grid-cols-2 gap-3">
+                    <div class="p-2 rounded-lg border border-gray-200">
+                        <label class="text-xs font-bold text-gray-500 uppercase block mb-1">Fecha Consulta</label>
+                        <input type="date" id="fechaConsulta" class="w-full bg-transparent font-medium outline-none">
+                    </div>
+                    <div id="date-box" class="p-2 rounded-lg border border-gray-200 transition-colors">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Entrega</label>
+                            <label class="flex items-center cursor-pointer select-none">
+                                <input type="checkbox" id="checkUrgente"
+                                    class="w-4 h-4 text-red-600 rounded bg-gray-100 border-gray-300 focus:ring-red-500"
+                                    onchange="toggleUrgente()">
+                                <span class="ml-1 text-xs font-bold text-red-500">URGENTE</span>
+                            </label>
+                        </div>
+                        <input type="date" id="fechaEntrega" class="w-full bg-transparent font-medium outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Edad + Peso -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Edad</label>
+                    <div class="flex items-center border-b-2 border-gray-300 focus-within:border-blue-500 py-1">
+                        <input type="number" id="pacienteEdad" min="0" max="120"
+                            class="w-full text-lg bg-transparent outline-none"
+                            placeholder="00">
+                        <span class="text-gray-400 text-sm ml-1">años</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">Peso</label>
+                    <div class="flex items-center border-b-2 border-gray-300 focus-within:border-blue-500 py-1">
+                        <input type="number" id="pacientePeso" min="0" max="300" step="0.1"
+                            class="w-full text-lg bg-transparent outline-none"
+                            placeholder="00">
+                        <span class="text-gray-400 text-sm ml-1">kg</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- SECTION: Medical Form (ARRIBA - primero lo llena el médico) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+
+            <!-- LEFT COLUMN: Medical Data Form -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- Calzado Info -->
+                <section class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <h3 class="text-blue-900 font-bold mb-3 border-b pb-2">1. Datos del Calzado</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">N° Calzado</label>
+                            <input type="text" id="numCalzado"
+                                class="w-full p-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-100 outline-none touch-target"
+                                placeholder="00">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Material</label>
+                            <input type="text" id="material"
+                                class="w-full p-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-100 outline-none touch-target">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-xs font-bold text-gray-500 block mb-1">Formato</span>
+                        <div class="flex flex-wrap gap-3">
+                            <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                    data-group="formato" value="Plano"> Plano</label>
+                            <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                    data-group="formato" value="Termo"> Termo</label>
+                            <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                    data-group="formato" value="Cp"> Cp</label>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-gray-500 block mb-1">Horma</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="horma"
+                                    value="Zapatilla"> Zapatilla</label>
+                            <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="horma"
+                                    value="Botin"> Botín</label>
+                            <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="horma"
+                                    value="Zapato"> Zapato</label>
+                            <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="horma"
+                                    value="3/4"> 3/4</label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Medical Checks -->
+                <div id="medical-sections-group">
+                    <!-- Tipo de Pie -->
+                    <section class="bg-white p-4 rounded-xl border border-gray-200 mb-4">
+                        <h3 class="text-blue-900 font-bold mb-3 border-b pb-2">2. Tipo de Pie (Clínico)</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Derecho -->
+                            <div class="space-y-2">
+                                <span class="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Derecho</span>
+                                <label class="flex items-center"><input type="checkbox" id="planoDer" class="inp-check"
+                                        data-group="pieDer" value="Plano" onchange="toggleGrados('PlanoDer')"> Plano</label>
+                                <!-- Grados Plano Derecho -->
+                                <div id="gradosPlanoDer" class="pl-5 hidden">
+                                    <span class="text-xs text-gray-500 block mb-1">Grado:</span>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoDer" class="inp-radio" data-group="gradoPlanoDer" value="1°"> 1°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoDer" class="inp-radio" data-group="gradoPlanoDer" value="2°"> 2°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoDer" class="inp-radio" data-group="gradoPlanoDer" value="3°"> 3°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoDer" class="inp-radio" data-group="gradoPlanoDer" value="4°"> 4°</label>
+                                    </div>
+                                </div>
+                                <label class="flex items-center"><input type="checkbox" id="cavoDer" class="inp-check"
+                                        data-group="pieDer" value="Cavo" onchange="toggleGrados('CavoDer')"> Cavo</label>
+                                <!-- Grados Cavo Derecho -->
+                                <div id="gradosCavoDer" class="pl-5 hidden">
+                                    <span class="text-xs text-gray-500 block mb-1">Grado:</span>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoDer" class="inp-radio" data-group="gradoCavoDer" value="1°"> 1°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoDer" class="inp-radio" data-group="gradoCavoDer" value="2°"> 2°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoDer" class="inp-radio" data-group="gradoCavoDer" value="3°"> 3°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoDer" class="inp-radio" data-group="gradoCavoDer" value="4°"> 4°</label>
+                                    </div>
+                                </div>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                        data-group="pieDer" value="Rigido"> Rígido</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                        data-group="pieDer" value="Flexible"> Flexible</label>
+                            </div>
+                            <!-- Izquierdo -->
+                            <div class="space-y-2">
+                                <span class="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Izquierdo</span>
+                                <label class="flex items-center"><input type="checkbox" id="planoIzq" class="inp-check"
+                                        data-group="pieIzq" value="Plano" onchange="toggleGrados('PlanoIzq')"> Plano</label>
+                                <!-- Grados Plano Izquierdo -->
+                                <div id="gradosPlanoIzq" class="pl-5 hidden">
+                                    <span class="text-xs text-gray-500 block mb-1">Grado:</span>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoIzq" class="inp-radio" data-group="gradoPlanoIzq" value="1°"> 1°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoIzq" class="inp-radio" data-group="gradoPlanoIzq" value="2°"> 2°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoIzq" class="inp-radio" data-group="gradoPlanoIzq" value="3°"> 3°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoPlanoIzq" class="inp-radio" data-group="gradoPlanoIzq" value="4°"> 4°</label>
+                                    </div>
+                                </div>
+                                <label class="flex items-center"><input type="checkbox" id="cavoIzq" class="inp-check"
+                                        data-group="pieIzq" value="Cavo" onchange="toggleGrados('CavoIzq')"> Cavo</label>
+                                <!-- Grados Cavo Izquierdo -->
+                                <div id="gradosCavoIzq" class="pl-5 hidden">
+                                    <span class="text-xs text-gray-500 block mb-1">Grado:</span>
+                                    <div class="flex gap-2 flex-wrap">
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoIzq" class="inp-radio" data-group="gradoCavoIzq" value="1°"> 1°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoIzq" class="inp-radio" data-group="gradoCavoIzq" value="2°"> 2°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoIzq" class="inp-radio" data-group="gradoCavoIzq" value="3°"> 3°</label>
+                                        <label class="flex items-center text-sm"><input type="radio" name="gradoCavoIzq" class="inp-radio" data-group="gradoCavoIzq" value="4°"> 4°</label>
+                                    </div>
+                                </div>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                        data-group="pieIzq" value="Rigido"> Rígido</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check"
+                                        data-group="pieIzq" value="Flexible"> Flexible</label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Alineación Biomecánica -->
+                    <section class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
+                        <h3 class="text-blue-900 font-bold border-b pb-2">3. Alineación Biomecánica</h3>
+
+                        <!-- Antepie -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Antepie</h4>
+                            <div class="flex flex-wrap gap-4 text-sm">
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="antepie" value="Egipcio"> Egipcio</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="antepie" value="Griego"> Griego</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="antepie" value="Polinesio"> Polinesio</label>
+                            </div>
+                        </div>
+
+                        <!-- Retropié -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Retropié</h4>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400">DER</span>
+                                    <div class="flex flex-col">
+                                        <label><input type="checkbox" class="inp-check" data-group="retroDer" value="Neutro"> Neutro</label>
+                                        <label><input type="checkbox" class="inp-check" data-group="retroDer" value="Pronado"> Pronado</label>
+                                        <label><input type="checkbox" class="inp-check" data-group="retroDer" value="Supinado"> Supinado</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400">IZQ</span>
+                                    <div class="flex flex-col">
+                                        <label><input type="checkbox" class="inp-check" data-group="retroIzq" value="Neutro"> Neutro</label>
+                                        <label><input type="checkbox" class="inp-check" data-group="retroIzq" value="Pronado"> Pronado</label>
+                                        <label><input type="checkbox" class="inp-check" data-group="retroIzq" value="Supinado"> Supinado</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rodillas -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Rodillas</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <!-- Rodilla Derecha -->
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 block mb-1">DER</span>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaDer" value="Valgo"> Valgo</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaDer" value="Varo"> Varo</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaDer" value="Neutro"> Neutro</label>
+                                    <label class="block mt-1"><input type="checkbox" class="inp-check" data-group="rodillaDer" value="Hiperextension"> Hiperextensión</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaDer" value="Semiflexion"> Semiflexión</label>
+                                </div>
+                                <!-- Rodilla Izquierda -->
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 block mb-1">IZQ</span>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaIzq" value="Valgo"> Valgo</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaIzq" value="Varo"> Varo</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaIzq" value="Neutro"> Neutro</label>
+                                    <label class="block mt-1"><input type="checkbox" class="inp-check" data-group="rodillaIzq" value="Hiperextension"> Hiperextensión</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="rodillaIzq" value="Semiflexion"> Semiflexión</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cadera -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Cadera</h4>
+                            <div class="grid grid-cols-2 gap-3 text-sm">
+                                <!-- Cadera Derecha -->
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 block mb-1">DER</span>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="caderaDer" value="RotacionInterna"> Rot. interna</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="caderaDer" value="RotacionExterna"> Rot. externa</label>
+                                    <label class="block mt-1"><input type="checkbox" class="inp-check" data-group="caderaDer" value="Antepulsion"> Antepulsión</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="caderaDer" value="Retropulsion"> Retropulsión</label>
+                                </div>
+                                <!-- Cadera Izquierda -->
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 block mb-1">IZQ</span>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="caderaIzq" value="RotacionInterna"> Rot. interna</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="caderaIzq" value="RotacionExterna"> Rot. externa</label>
+                                    <label class="block mt-1"><input type="checkbox" class="inp-check" data-group="caderaIzq" value="Antepulsion"> Antepulsión</label>
+                                    <label class="block"><input type="checkbox" class="inp-check" data-group="caderaIzq" value="Retropulsion"> Retropulsión</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Discrepancia de miembros -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Discrepancia de miembros</h4>
+                            <div class="flex flex-wrap gap-3 text-sm">
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="discrepancia" value="Real"> Real</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="discrepancia" value="Aparente"> Aparente</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="discrepancia" value="Espinograma"> Espinograma</label>
+                                <label class="flex items-center"><input type="checkbox" class="inp-check" data-group="discrepancia" value="Escanograma"> Escanograma</label>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Hallazgos + Attachment -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+
+                <!-- Hallazgos List -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex-grow">
+                    <h4 class="text-sm font-bold text-blue-800 mb-2 flex items-center justify-between">
+                        <span><i class="fas fa-list-ul mr-2"></i>Indicaciones &amp; Hallazgos</span>
+                        <span class="text-xs font-normal text-blue-600">(Editable)</span>
+                    </h4>
+                    <ul id="hallazgosList" class="space-y-2"></ul>
+                </div>
+
+                <!-- File Attachment -->
+                <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-200 transition-colors no-print relative">
+                    <input type="file" id="pdfAttachment" accept="application/pdf"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        onchange="handleAttachment(this)">
+                    <div id="uploadPlaceholder" class="pointer-events-none">
+                        <i class="fas fa-cloud-upload-alt text-2xl text-gray-400 mb-1"></i>
+                        <p class="text-sm font-bold text-gray-600">Adjuntar Estudio / Receta (PDF)</p>
+                        <p class="text-xs text-gray-500">Toca para seleccionar archivo</p>
+                    </div>
+                    <div id="fileInfo" class="hidden flex items-center justify-center text-green-700 pointer-events-none">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span id="fileName" class="font-bold text-sm truncate" style="max-width:200px;display:inline-block;"></span>
+                        <button type="button"
+                            class="pointer-events-auto ml-3 text-red-500 hover:text-red-700 text-xs uppercase font-bold"
+                            onclick="removeAttachment(event)">Quitar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIVIDER: Diseño de Plantilla -->
+        <div class="flex items-center gap-4 mb-6">
+            <div class="flex-grow border-t-2 border-gray-200"></div>
+            <div class="bg-gray-800 text-white text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full flex items-center gap-2">
+                <i class="fas fa-shoe-prints"></i> Diseño de Plantilla
+            </div>
+            <div class="flex-grow border-t-2 border-gray-200"></div>
+        </div>
+
+        <!-- CANVAS: Full Width (ABAJO - lo último que hace el médico) -->
+        <div class="mb-6">
+            <!-- Toolbar -->
+            <div class="bg-gray-800 text-white p-2 rounded-t-xl flex items-center justify-between no-print">
+                <div class="flex gap-2 items-center">
+                    <button id="btn-move" onclick="setMode('move')"
+                        class="tool-btn w-10 h-10 rounded-full bg-yellow-400 hover:bg-yellow-300 border-2 border-transparent transition-all shadow-lg flex items-center justify-center text-gray-900"
+                        title="Mover piezas"><i class="fas fa-hand-paper"></i></button>
+                    <button id="btn-draw-red" onclick="setMode('draw', 'red')"
+                        class="tool-btn w-10 h-10 rounded-full bg-red-500 hover:bg-red-400 border-2 border-transparent transition-all shadow-lg flex items-center justify-center text-white"
+                        title="Lápiz Rojo"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="btn-draw-blue" onclick="setMode('draw', 'blue')"
+                        class="tool-btn w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-400 border-2 border-transparent transition-all shadow-lg flex items-center justify-center text-white"
+                        title="Lápiz Azul"><i class="fas fa-pencil-alt"></i></button>
+                    <button id="btn-erase" onclick="setMode('erase')"
+                        class="tool-btn w-10 h-10 rounded-full bg-gray-200 text-gray-800 hover:bg-white border-2 border-transparent transition-all shadow-lg flex items-center justify-center"
+                        title="Goma"><i class="fas fa-eraser"></i></button>
+                    <div class="w-px h-7 bg-gray-600 mx-1"></div>
+                    <button onclick="undoCanvas()"
+                        class="w-10 h-10 rounded-full bg-gray-700 hover:bg-gray-600 border-2 border-transparent transition-all shadow-lg flex items-center justify-center text-white"
+                        title="Deshacer (Ctrl+Z)"><i class="fas fa-undo"></i></button>
+                </div>
+                <div id="mode-label" class="text-xs font-bold uppercase tracking-wider text-yellow-300">Modo: Mover</div>
+                <button onclick="clearCanvas()" class="text-red-400 hover:text-red-200 px-3">
+                    <i class="fas fa-trash-alt mr-1"></i> Limpiar
+                </button>
+            </div>
+            <!-- Canvas: full width, tall -->
+            <div class="canvas-container relative bg-white shadow-inner" style="height:700px;">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- BUILDER: Selector de piezas (ABAJO) -->
+        <div class="mb-6">
+            <div id="ortho-builder-panel"
+                class="bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm no-print">
+                <div class="flex border-b border-gray-200 bg-gray-50">
+                    <button onclick="setBuilderTab('A')" id="tab-A"
+                        class="builder-tab flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 border-b-2 border-transparent transition-all">A.
+                        Metatarsales</button>
+                    <button onclick="setBuilderTab('B')" id="tab-B"
+                        class="builder-tab flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 border-b-2 border-transparent transition-all">B.
+                        Arcos</button>
+                    <button onclick="setBuilderTab('C')" id="tab-C"
+                        class="builder-tab flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 border-b-2 border-transparent transition-all">C.
+                        Talón</button>
+                </div>
+                <div class="p-4">
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="selectFoot('izq')" id="btn-foot-izq"
+                            class="foot-btn flex-1 py-2 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 font-bold text-gray-600 transition-colors">Izquierdo</button>
+                        <button onclick="selectFoot('ambos')" id="btn-foot-ambos"
+                            class="foot-btn flex-1 py-2 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 font-bold text-gray-600 transition-colors">Ambos</button>
+                        <button onclick="selectFoot('der')" id="btn-foot-der"
+                            class="foot-btn flex-1 py-2 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 font-bold text-gray-600 transition-colors">Derecho</button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="text-xs font-bold text-gray-500 uppercase block mb-1">Elemento</label>
+                        <select id="builder-element" onchange="updateVariableInputs()"
+                            class="w-full p-3 rounded-lg border border-gray-300 font-semibold text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white touch-target">
+                        </select>
+                    </div>
+                    <div id="builder-variables" class="space-y-3 mb-4"></div>
+                    <button onclick="addToBuilder()"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform flex items-center justify-center text-lg uppercase tracking-wide touch-target">
+                        <i class="fas fa-plus mr-2"></i> Agregar a la Plantilla
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <footer class="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row gap-4 justify-between no-print">
+            <div class="text-xs text-gray-400 self-center">v2.1 - Offline Capable</div>
+            <div class="flex gap-4 w-full md:w-auto">
+                <button onclick="generatePDF('taller')"
+                    class="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-4 rounded-xl shadow-lg font-bold transition-transform active:scale-95 flex items-center justify-center">
+                    <i class="fas fa-hammer mr-2"></i> PDF Taller (Hoja 1)
+                </button>
+                <button onclick="generatePDF('full')"
+                    class="flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-xl shadow-lg font-bold transition-transform active:scale-95 flex items-center justify-center">
+                    <i class="fas fa-file-pdf mr-2"></i> PDF Completo + Adjunto
+                </button>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Hidden Print Template (Half Letter / A5 Landscape approx) -->
+    <div id="print-template"
+        style="position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;width:794px;background:white;padding:32px 36px 28px 36px;color:black;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box;">
+
+        <!-- ===== HEADER ===== -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid black;padding-bottom:10px;margin-bottom:12px;">
+
+            <!-- Logo + título -->
+            <div style="flex:0 0 auto;">
+                <div style="font-size:22px;font-weight:900;letter-spacing:1px;text-transform:uppercase;line-height:1.1;">Simón Ortopedia</div>
+                <div style="font-size:12px;color:#555;margin-top:2px;">Ficha Técnica de Taller</div>
+            </div>
+
+            <!-- Paciente + fecha + urgente -->
+            <div style="flex:1;text-align:center;padding:0 20px;">
+                <div style="font-size:17px;font-weight:800;text-transform:uppercase;" id="tpl-patient">PACIENTE: -</div>
+                <div style="font-size:13px;margin-top:3px;">ENTREGA: <strong id="tpl-date">-</strong></div>
+                <div id="tpl-urgent" style="display:none;font-size:18px;font-weight:900;color:#dc2626;letter-spacing:2px;margin-top:4px;">⚠ URGENTE</div>
+            </div>
+
+            <!-- Especificaciones calzado -->
+            <div style="flex:0 0 auto;border:2px solid black;border-radius:6px;padding:8px 12px;min-width:170px;background:#f9f9f9;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:6px;border-bottom:1px solid #ccc;padding-bottom:3px;">Especificaciones</div>
+                <table style="border-collapse:collapse;width:100%;font-size:13px;">
+                    <tr>
+                        <td style="font-weight:700;padding:2px 6px 2px 0;color:#333;white-space:nowrap;">N° Talle:</td>
+                        <td style="font-weight:800;font-size:15px;" id="tpl-talle">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;padding:2px 6px 2px 0;color:#333;">Material:</td>
+                        <td id="tpl-material">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;padding:2px 6px 2px 0;color:#333;">Formato:</td>
+                        <td id="tpl-formato">-</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:700;padding:2px 6px 2px 0;color:#333;">Horma:</td>
+                        <td id="tpl-horma">-</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== CANVAS IMAGEN (ancho completo, mitad de hoja) ===== -->
+        <div style="width:100%;height:370px;border:2px solid #333;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#fff;margin-bottom:14px;">
+            <img id="tpl-canvas-img" src="" style="max-width:100%;max-height:100%;object-fit:contain;display:block;">
+        </div>
+
+        <!-- ===== TABLA DE INDICACIONES ===== -->
+        <div style="margin-top:4px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:6px;">Indicaciones &amp; Hallazgos</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#222;color:white;">
+                        <th style="border:1px solid #333;padding:5px 8px;text-align:left;width:12%;">LADO</th>
+                        <th style="border:1px solid #333;padding:5px 8px;text-align:left;width:28%;">ELEMENTO</th>
+                        <th style="border:1px solid #333;padding:5px 8px;text-align:left;">DETALLE</th>
+                    </tr>
+                </thead>
+                <tbody id="tpl-table-body">
+                    <!-- Rows inserted by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer / Medical (Optional) -->
+        <div id="tpl-medical-info" style="margin-top:10px;font-size:11px;border-top:1px solid black;padding-top:6px;display:none;"></div>
+    </div>
+
+    <script>
+        // --- GLOBAL VARIABLES ---
+        let canvas;
+        let attachedPdfBuffer = null;
+        let objectCounter = 0;
+        let findingsData = []; // Stores structured data for the table
+
+        let FOOT_CONFIG = {
+            scale: 1,
+            top: 40,
+            width: 90, // native path width approx
+            height: 230, // native path height approx
+            centerX_L: 0,
+            centerX_R: 0
+        };
+
+        // --- ORTHOPEDIC DATA ---
+        const ORTHOPEDIC_DATA = {
+            "A": {
+                label: "Metatarsales",
+                items: [
+                    {
+                        name: "Oliva",
+                        vars: [{ label: "Altura", options: ["Alta", "3mm"] }],
+                        shape: "triangle_round", zone: "meta_center"
+                    },
+                    {
+                        name: "MTT (Pipa)",
+                        vars: [{ label: "Altura", options: ["Alta", "3mm"] }],
+                        shape: "bean", zone: "meta_center"
+                    },
+                    {
+                        name: "Pipa",
+                        vars: [{ label: "Altura", options: ["Alta", "3mm"] }],
+                        shape: "bean_large", zone: "meta_center"
+                    },
+                    {
+                        name: "Multi",
+                        vars: [{ label: "Altura", options: ["Alta", "3mm"] }],
+                        shape: "multi_rect", zone: "meta_center"
+                    },
+                    {
+                        name: "Barra 5to",
+                        vars: [{ label: "Altura", options: ["Alta", "3mm"] }],
+                        shape: "rect_vertical", zone: "mid_external"
+                    },
+                    {
+                        name: "1er Metatarsiano",
+                        vars: [{ label: "Altura", options: ["2mm", "4mm", "5mm + adelante"] }],
+                        shape: "rect_square", zone: "meta_internal"
+                    },
+                    {
+                        name: "Apoyo Retrocapital MTT",
+                        vars: [{ label: "Material", options: ["Latex 3mm", "Poron 3mm"] }],
+                        shape: "bar_arc", zone: "meta_arch"
+                    },
+                    {
+                        name: "Bajo Fondo",
+                        vars: [{ label: "Material", options: ["Latex 3mm", "Latex 5mm", "Poron 3mm", "Poron 5mm"] }],
+                        shape: "bajo_fondo", zone: "meta_center"
+                    }
+                ]
+            },
+            "B": {
+                label: "Arcos y Realces",
+                items: [
+                    {
+                        name: "ALI (Arco Interno)",
+                        shape: "semicircle", zone: "mid_internal",
+                        vars: [
+                            { label: "Dureza", options: ["Duro", "Blando", "50%"] }
+                        ],
+                    },
+                    {
+                        name: "Contraarco",
+                        shape: "rect_block", zone: "mid_external",
+                        vars: [{ label: "Material", options: ["Latex 2mm", "Latex 3mm", "EVA 2mm + Latex 2mm"] }]
+                    },
+                    {
+                        name: "Realce Talón",
+                        shape: "wedge", zone: "heel_wedge",
+                        vars: [
+                            { label: "Tipo", options: ["Externo", "Interno"] },
+                            { label: "Material", options: ["Corcho 3mm", "Corcho 4mm", "Corcho 5mm", "Corcho 6mm", "EVA 3mm", "EVA 4mm", "EVA 5mm", "EVA 6mm", "Igualar"] }
+                        ]
+                    },
+                    {
+                        name: "Realce Externo Total",
+                        shape: "wedge_long", zone: "total_wedge",
+                        vars: [
+                            { label: "Altura", options: ["3mm", "4mm", "5mm", "6mm"] }
+                        ]
+                    },
+                    {
+                        name: "RET (Realce Externo Talón)",
+                        shape: "ret_shape", zone: "heel_ext_wedge",
+                        vars: [
+                            { label: "Material", options: ["EVA", "Corcho"] },
+                            { label: "Medida", options: ["2mm","3mm","4mm","5mm","6mm","7mm","8mm"] }
+                        ]
+                    },
+                    {
+                        name: "RIT (Realce Interno Talón)",
+                        shape: "rit_shape", zone: "heel_int_wedge",
+                        vars: [
+                            { label: "Material", options: ["EVA", "Corcho"] },
+                            { label: "Medida", options: ["2mm","3mm","4mm","5mm","6mm","7mm","8mm"] }
+                        ]
+                    }
+                ]
+            },
+            "C": {
+                label: "Taloneras",
+                items: [
+                    {
+                        name: "Talonera Entera",
+                        shape: "u_shape", zone: "heel_center",
+                        vars: [{ label: "Material", options: [
+                            "Latex 2mm", "Latex 3mm", "Latex 5mm", "Latex 8mm",
+                            "EVA 2mm + Latex 3mm", "EVA + Latex 4mm",
+                            "Latex 3mm + U EVA 2mm", "Latex 4mm + U EVA 2mm",
+                            "Poron 3mm + Latex 3mm", "Poron 3mm + U Latex 5mm",
+                            "EVA 2mm"
+                        ]}]
+                    },
+                    {
+                        name: "Espolón (Herradura)",
+                        shape: "horseshoe_neon", zone: "heel_center",
+                        vars: [{ label: "Material", options: ["Latex 3mm", "Latex 5mm", "Latex 8mm"] }]
+                    },
+                    {
+                        name: "Acortamiento (texto)",
+                        shape: "none", zone: "heel_text_only",
+                        vars: (() => {
+                            const opts = [];
+                            for (let i = 2; i <= 10; i++) opts.push(i + "mm");
+                            return opts;
+                        })()
+                    },
+                    {
+                        name: "+ Acortamiento",
+                        shape: "acort_outside", zone: "acort_outside",
+                        vars: [
+                            { label: "Material", options: ["EVA", "Corcho"] },
+                            { label: "Medida", options: ["2mm","3mm","4mm","5mm","6mm","7mm","8mm"] }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        // Sub-variables logic for ALI
+        const ALI_SUBVARS = {
+            "Duro":   ["Bajo", "Normal", "Alto"],
+            "Blando": ["Bajo", "Normal", "Alto"],
+            "50%":    ["Muy bajo", "Bajo", "Normal", "Alto"]
+        };
+
+        let currentTab = 'A';
+        let currentFoot = 'izq'; // izq, der, ambos
+        let currentElement = null;
+
+        // --- INIT ---
+        // FIX: Use requestAnimationFrame to ensure iOS Safari has painted layout before reading clientWidth
+        window.addEventListener('load', () => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    initFabric();
+                    document.getElementById('fechaEntrega').valueAsDate = new Date();
+                    setBuilderTab('A');
+                    selectFoot('izq');
+                    // Save undo after free-draw strokes
+                    canvas.on('path:created', () => saveUndoState());
+                    // Save undo after moving objects
+                    canvas.on('object:modified', () => saveUndoState());
+                    // Initial blank state
+                    saveUndoState();
+                    // Start in move mode
+                    setMode('move');
+                });
+            });
+        });
+
+        // FIX: Re-initialize canvas on orientation change / resize (critical for iPad rotation)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const currentJSON = canvas ? canvas.toJSON(['id', 'selectable', 'evented', 'isBg']) : null;
+                initFabric();
+                if (currentJSON) {
+                    canvas.loadFromJSON(currentJSON, () => canvas.renderAll());
+                }
+                setMode(currentMode);
+            }, 300);
+        });
+
+        // --- FABRIC.JS SETUP ---
+        // --- FABRIC.JS SETUP ---
+        // --- FABRIC.JS SETUP ---
+        function initFabric() {
+            const container = document.querySelector('.canvas-container');
+            const cw = container.clientWidth;
+            const ch = 700;
+            if (canvas) canvas.dispose();
+            canvas = new fabric.Canvas('mainCanvas', { width: cw, height: ch, isDrawingMode: true, selection: false });
+
+            // Foot SVG: x[5..95], y[10..240] → W=90, H=230 | toes=top, heel=bottom
+            const FOOT_PATH = "M 50,10 C 85,10 95,50 95,90 C 95,150 85,180 70,240 C 60,240 40,240 30,240 C 15,180 5,150 5,90 C 5,50 15,10 50,10 Z";
+            const PATH_MIN_Y = 10;  // SVG bounding box starts at y=10
+            const nativeW = 90, nativeH = 230;
+
+            // Scale: foot takes ~22% of canvas width, also fit vertically
+            const scaleW = (cw * 0.22) / nativeW;
+            const scaleH = (ch - 80)   / nativeH;
+            const scale  = Math.min(scaleW, scaleH, 2.6);
+            const fW = nativeW * scale;
+            const fH = nativeH * scale;
+
+            FOOT_CONFIG.scale    = scale;
+            FOOT_CONFIG.width    = fW;
+            FOOT_CONFIG.height   = fH;
+            FOOT_CONFIG.top      = (ch - fH) / 2;
+            FOOT_CONFIG.centerX_L = cw * 0.28;
+            FOOT_CONFIG.centerX_R = cw * 0.72;
+
+            const topPos = FOOT_CONFIG.top;
+            const cxL    = FOOT_CONFIG.centerX_L;
+            const cxR    = FOOT_CONFIG.centerX_R;
+
+            const footStyle = { fill: '#f1f5f9', stroke: '#334155', strokeWidth: 2,
+                originX: 'center', originY: 'top', selectable: false, evented: false,
+                scaleX: scale, scaleY: scale };
+            const leftFoot  = new fabric.Path(FOOT_PATH, { ...footStyle, left: cxL, top: topPos });
+            const rightFoot = new fabric.Path(FOOT_PATH, { ...footStyle, left: cxR, top: topPos, flipX: true });
+            leftFoot.isBg  = true;
+            rightFoot.isBg = true;
+            canvas.add(leftFoot, rightFoot);
+            canvas.sendToBack(leftFoot);
+            canvas.sendToBack(rightFoot);
+
+            // Y helper: native SVG y → canvas y
+            const Yc = (ny) => topPos + (ny - PATH_MIN_Y) * scale;
+
+            // Anatomical zone guide lines
+            const zones = [
+                { ny: 65,  lbl: 'METATARSALES' },
+                { ny: 110, lbl: 'ARCO LONGITUDINAL' },
+                { ny: 175, lbl: 'TALÓN' },
+            ];
+            const lineSty = { stroke:'#94a3b8', strokeWidth:1, strokeDashArray:[5,3], selectable:false, evented:false };
+            const lblSty  = { fontSize:13, fontFamily:'Arial', fontWeight:'bold', fill:'#334155', backgroundColor:'rgba(255,255,255,0.75)', padding:2, selectable:false, evented:false };
+            zones.forEach(({ ny, lbl }) => {
+                const zy = Yc(ny);
+                canvas.add(new fabric.Line([0, zy, cw, zy], lineSty));
+                canvas.add(new fabric.Text(lbl, { ...lblSty, left:6, top:zy+2 }));
+            });
+
+            // Foot name labels
+            const fLbl = { fontSize:18, fontFamily:'Arial', fontWeight:'bold', fill:'#0f172a', selectable:false, evented:false };
+            canvas.add(new fabric.Text('PIE IZQUIERDO', { ...fLbl, left:cxL, top:topPos-24, originX:'center' }));
+            canvas.add(new fabric.Text('PIE DERECHO',   { ...fLbl, left:cxR, top:topPos-24, originX:'center' }));
+        }
+        // --- DRAWING TOOLS ---
+        // ── Tool mode & undo ────────────────────────────────────────────────
+        let currentMode = 'move';
+        const undoStack = [];          // array of JSON snapshots
+        const UNDO_MAX  = 40;
+
+        function saveUndoState() {
+            const snap = canvas.toJSON(['id', 'selectable', 'evented', 'isBg']);
+            undoStack.push(JSON.stringify(snap));
+            if (undoStack.length > UNDO_MAX) undoStack.shift();
+        }
+
+        function undoCanvas() {
+            if (undoStack.length < 2) return;          // need at least 2: current + one before
+            undoStack.pop();                            // discard current state
+            const prev = JSON.parse(undoStack[undoStack.length - 1]);
+            canvas.loadFromJSON(prev, () => {
+                canvas.renderAll();
+                // Remove deleted items from findingsData by checking active ids on canvas
+                const activeIds = new Set(canvas.getObjects().map(o => o.id).filter(Boolean));
+                findingsData = findingsData.filter(d => activeIds.has(d.id));
+                // Rebuild list
+                document.getElementById('hallazgosList').innerHTML = '';
+                findingsData.forEach(d => addListItem(d.id, d.side + ': ' + d.element + ' - ' + d.details));
+            });
+        }
+
+        function setMode(mode, color) {
+            currentMode = mode;
+            // Reset all tool button highlights
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.remove('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-gray-800');
+            });
+            const btnMap = { move: 'btn-move', draw_red: 'btn-draw-red', draw_blue: 'btn-draw-blue', erase: 'btn-erase' };
+
+            if (mode === 'move') {
+                canvas.isDrawingMode = false;
+                canvas.selection = false;
+                // Make only user-placed objects selectable + movable
+                canvas.getObjects().forEach(obj => {
+                    if (obj.selectable !== false) {   // skip bg feet & zone labels
+                        obj.set({ selectable: true, evented: true, lockRotation: true, hasControls: false, hasBorders: true });
+                    }
+                });
+                document.getElementById('btn-move').classList.add('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-gray-800');
+                document.getElementById('mode-label').textContent = 'Modo: Mover piezas';
+                document.getElementById('mode-label').className = 'text-xs font-bold uppercase tracking-wider text-yellow-300';
+
+            } else if (mode === 'draw') {
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush.color = color === 'red' ? '#ef4444' : '#3b82f6';
+                canvas.freeDrawingBrush.width = 3;
+                canvas.getObjects().forEach(obj => {
+                    if (obj.selectable !== false) obj.set({ selectable: false, evented: false });
+                });
+                canvas.discardActiveObject();
+                const btnId = color === 'red' ? 'btn-draw-red' : 'btn-draw-blue';
+                document.getElementById(btnId).classList.add('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-gray-800');
+                document.getElementById('mode-label').textContent = 'Modo: Dibujo libre ' + (color === 'red' ? '🔴' : '🔵');
+                document.getElementById('mode-label').className = 'text-xs font-bold uppercase tracking-wider text-blue-300';
+
+            } else if (mode === 'erase') {
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush.color = '#ffffff';
+                canvas.freeDrawingBrush.width = 22;
+                canvas.getObjects().forEach(obj => {
+                    if (obj.selectable !== false) obj.set({ selectable: false, evented: false });
+                });
+                canvas.discardActiveObject();
+                document.getElementById('btn-erase').classList.add('ring-2', 'ring-white', 'ring-offset-1', 'ring-offset-gray-800');
+                document.getElementById('mode-label').textContent = 'Modo: Goma';
+                document.getElementById('mode-label').className = 'text-xs font-bold uppercase tracking-wider text-gray-300';
+            }
+            canvas.renderAll();
+        }
+
+        function clearCanvas() {
+            if (!confirm('¿Borrar todo el dibujo?')) return;
+            const objects = canvas.getObjects();
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const o = objects[i];
+                if (o.isBg !== true && o.selectable !== false) canvas.remove(o);
+            }
+            findingsData = [];
+            document.getElementById('hallazgosList').innerHTML = '';
+            undoStack.length = 0;
+            saveUndoState();
+            canvas.renderAll();
+        }
+
+        function clearOrder() {
+            if (!confirm('¿Limpiar TODA la orden? Se borrarán todos los datos del formulario y el diseño.')) return;
+            
+            // Clear form inputs
+            document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(input => {
+                input.value = '';
+            });
+            
+            // Clear checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Clear radio buttons
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // Hide all grados sections
+            ['PlanoDer','PlanoIzq','CavoDer','CavoIzq'].forEach(k => {
+                const el = document.getElementById('grados' + k);
+                if (el) el.classList.add('hidden');
+            });
+            
+            // Clear attachment
+            document.getElementById('pdfAttachment').value = '';
+            attachedPdfBuffer = null;
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('fileInfo').classList.add('hidden');
+            
+            // Clear canvas
+            const objects = canvas.getObjects();
+            for (let i = objects.length - 1; i >= 0; i--) {
+                const o = objects[i];
+                if (o.isBg !== true && o.selectable !== false) canvas.remove(o);
+            }
+            
+            // Clear findings
+            findingsData = [];
+            document.getElementById('hallazgosList').innerHTML = '';
+            
+            // Clear undo stack
+            undoStack.length = 0;
+            saveUndoState();
+            
+            // Set default date
+            document.getElementById('fechaEntrega').valueAsDate = new Date();
+            
+            // Reset canvas
+            canvas.renderAll();
+            setMode('move');
+            
+            alert('✓ Orden limpiada correctamente');
+        }
+
+        // --- ORTHO BUILDER LOGIC ---
+
+        function setBuilderTab(tab) {
+            currentTab = tab;
+            // UI Update
+            document.querySelectorAll('.builder-tab').forEach(b => {
+                b.classList.remove('text-blue-600', 'border-blue-600', 'bg-blue-50');
+                b.classList.add('text-gray-500', 'border-transparent');
+            });
+            const active = document.getElementById('tab-' + tab);
+            active.classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50');
+            active.classList.remove('text-gray-500', 'border-transparent');
+
+            updateElementSelect();
+        }
+
+        function selectFoot(foot) {
+            currentFoot = foot;
+            document.querySelectorAll('.foot-btn').forEach(b => {
+                b.classList.remove('bg-blue-100', 'border-blue-500', 'text-blue-700');
+                b.classList.add('border-gray-200', 'text-gray-600');
+            });
+            const active = document.getElementById('btn-foot-' + foot);
+            active.classList.add('bg-blue-100', 'border-blue-500', 'text-blue-700');
+            active.classList.remove('border-gray-200', 'text-gray-600');
+        }
+
+        function updateElementSelect() {
+            const select = document.getElementById('builder-element');
+            select.innerHTML = "";
+            const group = ORTHOPEDIC_DATA[currentTab];
+
+            group.items.forEach((item, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = item.name;
+                select.appendChild(opt);
+            });
+
+            updateVariableInputs();
+        }
+
+        function updateVariableInputs() {
+            const elIndex = document.getElementById('builder-element').value;
+            const item = ORTHOPEDIC_DATA[currentTab].items[elIndex];
+            currentElement = item;
+
+            const container = document.getElementById('builder-variables');
+            container.innerHTML = "";
+
+            // Handle different variable structures
+            if (item.name.includes("ALI")) {
+                // Special Cascade for ALI
+                createSelect(container, "Dureza", item.vars[0].options, "var-ali-type", (e) => {
+                    updateAliSubvar(e.target.value);
+                });
+                // Placeholder for subvar
+                const subDiv = document.createElement('div');
+                subDiv.id = "ali-subvar-container";
+                container.appendChild(subDiv);
+                // Trigger initial
+                updateAliSubvar(item.vars[0].options[0]);
+
+            } else if (Array.isArray(item.vars)) {
+                // Check if it's a list of objects (named variables) or simple strings
+                if (typeof item.vars[0] === 'object' && item.vars[0].label) {
+                    // Multiple named Selects
+                    item.vars.forEach((v, i) => {
+                        createSelect(container, v.label, v.options, `var-${i}`);
+                    });
+                } else {
+                    // Single simple list
+                    createSelect(container, "Variable", item.vars, "var-0");
+                }
+            }
+        }
+
+        function updateAliSubvar(hardness) {
+            const container = document.getElementById('ali-subvar-container');
+            container.innerHTML = "";
+            const options = ALI_SUBVARS[hardness];
+            createSelect(container, "Altura", options, "var-ali-height");
+        }
+
+        function createSelect(container, label, options, id, onChange = null) {
+            const div = document.createElement('div');
+            const lbl = document.createElement('label');
+            lbl.className = "text-xs font-bold text-gray-500 uppercase block mb-1";
+            lbl.textContent = label;
+
+            const sel = document.createElement('select');
+            sel.id = id;
+            sel.className = "w-full p-2.5 rounded border border-gray-300 text-gray-700 text-sm outline-none focus:border-blue-500 bg-gray-50 touch-target";
+
+            options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                sel.appendChild(o);
+            });
+
+            if (onChange) sel.addEventListener('change', onChange);
+
+            div.appendChild(lbl);
+            div.appendChild(sel);
+            container.appendChild(div);
+        }
+
+        // --- MAIN ADD FUNCTION ---
+        function addToBuilder() {
+            // 1. Gather Data
+            const element = currentElement;
+            const varInputs = document.querySelectorAll('#builder-variables select');
+            let varText = "";
+            varInputs.forEach(sel => varText += sel.value + " ");
+            varText = varText.trim();
+
+            const feetToDraw = (currentFoot === 'ambos') ? ['izq', 'der'] : [currentFoot];
+
+            // 2. Draw & Add Text for each foot
+            feetToDraw.forEach(side => {
+                const labelSide = (side === 'izq') ? "Pie Izq" : "Pie Der";
+
+                // Format label text: Name (First Variable)
+                // Shorten variables to keep label concise
+                const shortVar = varText.split(' ')[0] || '';
+                const labelText = `${element.name} (${shortVar})`;
+
+                // Add graphic (unless it's text-only like Acortamiento)
+                if (element.shape !== 'none') {
+                    const coords = getCoordinates(side, element.zone);
+                    const shapeObj = getShape(element.shape, coords, side === 'izq'); // isLeft boolean for mirroring
+
+                    // --- LABEL: placed ON the shape (inside the foot), small and centered ---
+                    const textObj = new fabric.Text(labelText, {
+                        left: coords.x,
+                        top: coords.y + 14,
+                        fontSize: 14,
+                        fontFamily: 'Arial',
+                        fontWeight: 'bold',
+                        fill: '#0f172a',
+                        backgroundColor: 'rgba(255,255,255,0.94)',
+                        originX: 'center',
+                        originY: 'top',
+                        padding: 3
+                    });
+
+                    // --- GROUPING ---
+                    const group = new fabric.Group([shapeObj, textObj], {
+                        left: coords.x,
+                        top: coords.y,
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: true
+                    });
+
+                    // ID goes to the GROUP for deletion logic
+                    group.id = 'obj_' + Date.now() + '_' + side;
+
+                    // Need to reset internal origins relative to group center?
+                    // Group creation handles this, but positions need to be absolute initially (which they are)
+
+                    canvas.add(group);
+
+                    // Add list item linked to this object
+                    addListItem(group.id, `${labelSide}: ${element.name} - ${varText}`);
+
+                    // Store for Table Generation
+                    findingsData.push({
+                        id: group.id,
+                        side: labelSide,
+                        element: element.name,
+                        details: varText.replace(/[\[\]]/g, ''),
+                        isShape: true
+                    });
+
+                } else {
+                    // Text only item
+                    const txtId = 'textOnly_' + Date.now();
+                    addListItem(txtId, `${labelSide}: ${element.name} - ${varText} (+ACORT)`);
+
+                    findingsData.push({
+                        id: txtId,
+                        side: labelSide,
+                        element: element.name,
+                        details: varText.replace(/[\[\]]/g, '') + " (+ACORT)",
+                        isShape: false
+                    });
+                }
+            });
+
+            canvas.renderAll();
+            saveUndoState();
+        }
+
+        // ─── COORDINATES ──────────────────────────────────────────────────────
+        // Native SVG foot: x[5..95] center=50, y[10..240] toes=top heel=bottom
+        // PATH_MIN_Y=10 → canvas_y = top + (native_y - 10) * scale
+        //
+        // Width at each Y level (approx):
+        //   y=72 (MTT heads):  x≈12..88  half-width≈38 from center
+        //   y=125 (arch):      x≈18..82  half-width≈32
+        //   y=210 (heel):      x≈28..72  half-width≈22
+        //
+        // Left foot: internal (medial) = +x, external (lateral) = -x
+        // Right foot: mirrored via flipX on the path
+        function getCoordinates(side, zone) {
+            const isLeft = (side === 'izq');
+            const cx     = isLeft ? FOOT_CONFIG.centerX_L : FOOT_CONFIG.centerX_R;
+            const sc     = FOOT_CONFIG.scale;
+            const top    = FOOT_CONFIG.top;
+            const fW     = FOOT_CONFIG.width;
+            const MIN_Y  = 10;
+            const Y      = (ny) => top + (ny - MIN_Y) * sc;
+
+            const Y_META = Y(72);
+            const Y_ARCH = Y(125);
+            const Y_HEEL = Y(210);
+
+            const dirInt = isLeft ? 1 : -1;
+            const dirExt = isLeft ? -1 : 1;
+
+            // X offsets (from native center=50) — kept inside foot boundary
+            const OFF_INT_M  = 17 * sc;  // internal meta  → native x≈67
+            const OFF_EXT_M  = 22 * sc;  // external meta  → native x≈28
+            const OFF_5TH    = 30 * sc;  // 5th MTT bar    → native x≈20 (edge)
+            const OFF_INT_A  = 14 * sc;  // internal arch  → native x≈64
+            const OFF_EXT_A  = 20 * sc;  // external arch  → native x≈30
+            const OFF_WEDGE  =  8 * sc;  // heel wedge     → native x≈42 or 58
+
+            let x = cx, y = Y_META;
+            switch (zone) {
+                // ── Metatarsales ──
+                case 'meta_center':    x = cx;                        y = Y_META;       break;
+                case 'meta_internal':  x = cx + dirInt * OFF_INT_M;   y = Y_META;       break;
+                case 'meta_external':  x = cx + dirExt * OFF_5TH;     y = Y_META;       break;
+                case 'meta_arch':      x = cx;                        y = Y(88);        break; // retrocapital bar
+                // ── Arcos ──
+                case 'mid_internal':   x = cx + dirInt * OFF_INT_A;   y = Y_ARCH;       break;
+                case 'mid_external':   x = cx + dirExt * OFF_EXT_A;   y = Y_ARCH;       break;
+                // ── Talón ──
+                case 'heel_center':     x = cx;                        y = Y_HEEL;       break;
+                case 'heel_wedge':      x = cx + dirExt * OFF_WEDGE;   y = Y_HEEL;       break;
+                case 'total_wedge':     x = cx;                        y = Y(145);       break;
+                case 'heel_text_only':  x = cx;                        y = Y_HEEL;       break;
+                // RET: external heel wedge — positioned at external border of heel
+                case 'heel_ext_wedge':  x = cx + dirExt * 16*sc;       y = Y_HEEL + 10*sc; break;
+                // RIT: internal heel wedge — positioned at internal border of heel
+                case 'heel_int_wedge':  x = cx + dirInt * 16*sc;       y = Y_HEEL + 10*sc; break;
+                // ── Fuera del pie ──
+                case 'acort_outside':
+                    // Circle placed outside the foot, below heel, on the external side
+                    x = cx + dirExt * (fW * 0.7);
+                    y = Y_HEEL + 60*sc;
+                    break;
+            }
+            return { x, y };
+        }
+
+                function getShape(shapeType, coords, isLeftFoot) {
+            let obj;
+            // Scale shapes proportionally to foot size
+            const sc = FOOT_CONFIG.scale;
+            const common = {
+                left: coords.x, top: coords.y,
+                originX: 'center', originY: 'center',
+                strokeWidth: 1.5
+            };
+
+            switch (shapeType) {
+                case 'triangle_round': // Oliva — small rounded triangle
+                    obj = new fabric.Triangle({
+                        ...common, width: 22*sc, height: 22*sc,
+                        fill: '#dc2626', stroke: '#991b1b', opacity: 0.75
+                    });
+                    break;
+
+                case 'bean': // MTT (Pipa) — kidney/bean shape (squashed ellipse)
+                    obj = new fabric.Ellipse({
+                        ...common, rx: 16*sc, ry: 9*sc,
+                        fill: '#dc2626', stroke: '#991b1b', opacity: 0.75,
+                        angle: isLeftFoot ? -25 : 25
+                    });
+                    break;
+
+                case 'bean_large': // Pipa — larger comma/hook shape
+                    obj = new fabric.Ellipse({
+                        ...common, rx: 20*sc, ry: 12*sc,
+                        fill: '#ea580c', stroke: '#9a3412', opacity: 0.75,
+                        angle: isLeftFoot ? -35 : 35
+                    });
+                    break;
+
+                case 'multi_rect': // Multi — 3 thin parallel bars (metatarsal caps)
+                    {
+                        const bw = 7*sc, bh = 18*sc, gap = 9*sc;
+                        obj = new fabric.Group([
+                            new fabric.Rect({ left: -gap-bw/2, top: -bh/2, width: bw, height: bh, fill: '#dc2626', opacity: 0.75, rx: 1 }),
+                            new fabric.Rect({ left:     -bw/2, top: -bh/2, width: bw, height: bh, fill: '#dc2626', opacity: 0.75, rx: 1 }),
+                            new fabric.Rect({ left:  gap-bw/2, top: -bh/2, width: bw, height: bh, fill: '#dc2626', opacity: 0.75, rx: 1 })
+                        ], { ...common });
+                    }
+                    break;
+
+                case 'rect_vertical': // Barra 5to — vertical bar on external arch
+                    obj = new fabric.Rect({
+                        ...common, width: 8*sc, height: 38*sc,
+                        fill: '#dc2626', stroke: '#991b1b', opacity: 0.75, rx: 2
+                    });
+                    break;
+
+                case 'rect_square': // 1er Metatarsiano — small square on 1st MTT head
+                    obj = new fabric.Rect({
+                        ...common, width: 16*sc, height: 16*sc,
+                        fill: '#dc2626', stroke: '#991b1b', opacity: 0.75, rx: 2
+                    });
+                    break;
+
+                case 'bajo_fondo': // Bajo Fondo — large semi-transparent circle covering MTT area
+                    obj = new fabric.Circle({
+                        ...common, radius: 26*sc,
+                        fill: '#dc2626', stroke: '#991b1b', opacity: 0.3, strokeWidth: 2
+                    });
+                    break;
+
+                case 'bar_arc': // Apoyo Retrocapital — wide curved bar behind all MTT heads
+                    obj = new fabric.Rect({
+                        ...common, width: 50*sc, height: 10*sc,
+                        rx: 6*sc, ry: 6*sc,
+                        fill: '#dc2626', stroke: '#991b1b', opacity: 0.6
+                    });
+                    break;
+
+                case 'semicircle': // ALI (Arco Interno) — thick C-bracket stroke
+                    {
+                        // Open C-shape, thick stroke, opening toward center of foot
+                        const r = 26*sc;
+                        // Arc from top to bottom, opening inward (toward foot center)
+                        const sweep = isLeftFoot ? 0 : 1;
+                        const pathAli = `M 0,${-r} A ${r},${r} 0 1,${sweep} 0,${r}`;
+                        obj = new fabric.Path(pathAli, {
+                            ...common,
+                            fill: 'transparent',
+                            stroke: '#2563eb',
+                            strokeWidth: 7*sc,
+                            strokeLineCap: 'round',
+                            opacity: 0.85
+                        });
+                    }
+                    break;
+
+                case 'rect_block': // Contraarco — rectangular block on external border
+                    obj = new fabric.Rect({
+                        ...common, width: 10*sc, height: 35*sc,
+                        fill: '#2563eb', stroke: '#1d4ed8', opacity: 0.65
+                    });
+                    break;
+
+                case 'wedge': // Realce Talón — triangular wedge on heel border
+                    obj = new fabric.Triangle({
+                        ...common, width: 24*sc, height: 24*sc,
+                        fill: '#d97706', stroke: '#92400e', opacity: 0.7,
+                        angle: isLeftFoot ? 90 : -90
+                    });
+                    break;
+
+                case 'wedge_long': // Realce Externo Total — tall wedge spanning arch+heel
+                    obj = new fabric.Rect({
+                        ...common, width: 12*sc, height: 80*sc,
+                        fill: '#d97706', opacity: 0.3, rx: 3
+                    });
+                    break;
+
+                case 'u_shape': // Talonera Entera — solid filled U cupping the heel
+                    {
+                        const w = 38*sc;  // full width
+                        const h = 30*sc;  // height of the U
+                        const r = 19*sc;  // radius of bottom curve (= w/2)
+                        // Filled U: two vertical sides + semicircle bottom
+                        const pathU =
+                            `M ${-w/2},${-h}` +
+                            ` L ${-w/2},0` +
+                            ` A ${r},${r} 0 0,0 ${w/2},0` +
+                            ` L ${w/2},${-h}` +
+                            ` Z`;
+                        obj = new fabric.Path(pathU, {
+                            ...common,
+                            fill: '#64748b', stroke: '#334155',
+                            strokeWidth: 1.5, opacity: 0.6
+                        });
+                    }
+                    break;
+
+                case 'horseshoe_neon': // Espolón — same U but neon green, narrower
+                    {
+                        const r = 18*sc;
+                        const pathHS = `M ${-r},${-r} Q ${-r},${r} 0,${r} Q ${r},${r} ${r},${-r}`;
+                        obj = new fabric.Path(pathHS, {
+                            ...common, fill: 'transparent',
+                            stroke: '#84cc16', strokeWidth: 6*sc,
+                            strokeLineCap: 'round'
+                        });
+                    }
+                    break;
+
+                case 'ret_shape': // RET — Realce Externo Talón: trapezoid wedge, tall on external side
+                    {
+                        // Top-down view of heel wedge:
+                        // Tall side on external edge, tapers to zero on internal side
+                        // Triangle: external-top, external-bottom, internal-bottom
+                        const w = 32*sc;  // width of wedge
+                        const h = 38*sc;  // max height (external side)
+                        // For left foot: external = left; for right foot: external = right
+                        // Shape: right triangle sitting at heel border
+                        const pathRet = isLeftFoot
+                            ? `M ${-w/2},${-h/2} L ${-w/2},${h/2} L ${w/2},${h/2} Z`   // tall on left (external for left foot)
+                            : `M ${w/2},${-h/2} L ${w/2},${h/2} L ${-w/2},${h/2} Z`;   // tall on right (external for right foot)
+                        obj = new fabric.Path(pathRet, {
+                            ...common,
+                            fill: '#ef4444', stroke: '#dc2626',
+                            strokeWidth: 2, opacity: 0.65
+                        });
+                    }
+                    break;
+
+                case 'rit_shape': // RIT — Realce Interno Talón: trapezoid wedge, tall on internal side
+                    {
+                        const w = 32*sc;
+                        const h = 38*sc;
+                        // Mirror of RET: tall side on internal (medial) edge
+                        const pathRit = isLeftFoot
+                            ? `M ${w/2},${-h/2} L ${w/2},${h/2} L ${-w/2},${h/2} Z`   // tall on right (internal for left foot)
+                            : `M ${-w/2},${-h/2} L ${-w/2},${h/2} L ${w/2},${h/2} Z`;  // tall on left (internal for right foot)
+                        obj = new fabric.Path(pathRit, {
+                            ...common,
+                            fill: '#ef4444', stroke: '#dc2626',
+                            strokeWidth: 2, opacity: 0.65
+                        });
+                    }
+                    break;
+                    {
+                        const r = 28*sc;
+                        obj = new fabric.Circle({
+                            ...common, radius: r,
+                            fill: 'transparent',
+                            stroke: '#dc2626', strokeWidth: 2.5,
+                            opacity: 0.9
+                        });
+                    }
+                    break;
+
+                default:
+                    obj = new fabric.Circle({ ...common, radius: 8*sc, fill: '#475569' });
+            }
+
+            return obj;
+        }
+
+        function addListItem(id, text) {
+            const list = document.getElementById('hallazgosList');
+            const li = document.createElement('li');
+            li.id = 'li_' + id;
+            // Flex items-start for wrapping text alignment
+            li.className = "flex items-start bg-white p-2 rounded border border-blue-200 shadow-sm";
+            li.innerHTML = `
+                <i class="fas fa-circle dot-icon text-blue-400 mt-1" style="font-size:8px;flex-shrink:0;margin-right:8px;"></i>
+                <div contenteditable="true" class="item-text-editable flex-grow text-sm font-medium text-gray-700 outline-none" style="word-break:break-word;min-height:1.25rem;">${text}</div>
+                <button onclick="removeObject('${id}')" class="text-red-400 p-1" style="flex-shrink:0;margin-top:2px;" ontouchstart="this.style.color='#dc2626'" ontouchend="this.style.color=''"><i class="fas fa-trash-alt"></i></button>
+            `;
+            list.appendChild(li);
+        }
+
+        function removeObject(id) {
+            // Remove from canvas
+            const objects = canvas.getObjects();
+            const obj = objects.find(o => o.id === id);
+            if (obj) canvas.remove(obj);
+
+            // Remove from list
+            const li = document.getElementById('li_' + id);
+            if (li) li.remove();
+
+            // Remove from findingsData
+            findingsData = findingsData.filter(item => item.id !== id);
+        }
+
+        // --- ATTACHMENT LOGIC ---
+        function handleAttachment(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                alert("El archivo es demasiado grande (Max 10MB)");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                attachedPdfBuffer = e.target.result;
+                document.getElementById('uploadPlaceholder').classList.add('hidden');
+                document.getElementById('fileInfo').classList.remove('hidden');
+                document.getElementById('fileName').textContent = file.name;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function removeAttachment(e) {
+            e.preventDefault();
+            e.stopPropagation(); // prevent triggering file input
+            attachedPdfBuffer = null;
+            document.getElementById('pdfAttachment').value = ""; // reset input
+            document.getElementById('uploadPlaceholder').classList.remove('hidden');
+            document.getElementById('fileInfo').classList.add('hidden');
+        }
+
+        // --- URGENT TOGGLE ---
+        function toggleUrgente() {
+            const isChecked = document.getElementById('checkUrgente').checked;
+            const box = document.getElementById('date-box');
+            if (isChecked) {
+                box.classList.add('is-urgent-bg', 'is-urgent-text');
+            } else {
+                box.classList.remove('is-urgent-bg', 'is-urgent-text');
+            }
+        }
+
+        // --- GRADOS TOGGLE (Plano y Cavo) ---
+        function toggleGrados(key) {
+            // key examples: 'PlanoDer', 'PlanoIzq', 'CavoDer', 'CavoIzq'
+            const checkboxId = key.charAt(0).toLowerCase() + key.slice(1); // 'planoDer', 'cavoIzq' etc.
+            const checkbox = document.getElementById(checkboxId);
+            const gradosDiv = document.getElementById('grados' + key);
+            if (!checkbox || !gradosDiv) return;
+            if (checkbox.checked) {
+                gradosDiv.classList.remove('hidden');
+            } else {
+                gradosDiv.classList.add('hidden');
+                gradosDiv.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+            }
+        }
+
+        // --- DATA PERSISTENCE (JSON) ---
+        async function exportJSON() {
+            const inputs = document.querySelectorAll('input:not([type="file"]):not([type="radio"]), textarea');
+            const radios = document.querySelectorAll('input[type="radio"]:checked');
+            const data = {
+                metadata: { version: "2.1", date: new Date().toISOString() },
+                formData: {},
+                canvas: canvas.toJSON(['id']),
+                listItems: []
+            };
+
+            // Capture regular inputs
+            inputs.forEach(input => {
+                if (input.type === 'checkbox') {
+                    if (input.checked) {
+                        data.formData[input.id || input.getAttribute('data-group') + '_' + input.value] = true;
+                    }
+                } else {
+                    data.formData[input.id] = input.value;
+                }
+            });
+
+            // Capture radio inputs
+            radios.forEach(radio => {
+                const group = radio.getAttribute('data-group') || radio.name;
+                data.formData['radio_' + group] = radio.value;
+            });
+
+            // Capture Dynamic List Text
+            const listLis = document.querySelectorAll('#hallazgosList li');
+            listLis.forEach(li => {
+                const id = li.id.replace('li_', '');
+                const textDiv = li.querySelector('div[contenteditable]');
+                const text = textDiv ? textDiv.innerText : "";
+                data.listItems.push({ id, text });
+            });
+
+            const fileName = `ORDEN_${document.getElementById('pacienteNombre').value || 'PACIENTE'}.json`;
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+
+            if (isIOS() && navigator.share) {
+                const file = new File([blob], fileName, { type: 'application/json' });
+                try {
+                    await navigator.share({ files: [file], title: fileName });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                    }
+                }
+            } else {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            }
+        }
+
+        function loadProject(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    // Reset UI
+                    document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+                    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+                    document.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(i => i.value = "");
+                    // Hide all grados sections on reset
+                    ['PlanoDer','PlanoIzq','CavoDer','CavoIzq'].forEach(k => {
+                        const el = document.getElementById('grados' + k);
+                        if (el) el.classList.add('hidden');
+                    });
+
+                    // Restore Form
+                    Object.keys(data.formData).forEach(key => {
+                        const val = data.formData[key];
+                        // Radio inputs
+                        if (key.startsWith('radio_')) {
+                            const group = key.replace('radio_', '');
+                            const radio = document.querySelector(`input[type="radio"][data-group="${group}"][value="${val}"]`)
+                                       || document.querySelector(`input[type="radio"][name="${group}"][value="${val}"]`);
+                            if (radio) {
+                                radio.checked = true;
+                                // Show grados container if it's a grado radio
+                                if (group.startsWith('gradoCavo') || group.startsWith('gradoPlano')) {
+                                    const key2 = group.replace('gradoCavo','Cavo').replace('gradoPlano','Plano');
+                                    const el = document.getElementById('grados' + key2);
+                                    if (el) el.classList.remove('hidden');
+                                }
+                            }
+                            return;
+                        }
+                        // Try by ID first
+                        let el = document.getElementById(key);
+                        if (el && el.type !== 'checkbox') el.value = val;
+                        else {
+                            const parts = key.split('_');
+                            if (parts.length > 1) {
+                                const group = parts[0];
+                                const value = parts[1];
+                                const check = document.querySelector(`input[data-group="${group}"][value="${value}"]`);
+                                if (check) {
+                                    check.checked = true;
+                                    // If Cavo or Plano is restored, show their grados
+                                    if (value === 'Cavo') {
+                                        const side = group === 'pieDer' ? 'CavoDer' : 'CavoIzq';
+                                        const el = document.getElementById('grados' + side);
+                                        if (el) el.classList.remove('hidden');
+                                    }
+                                    if (value === 'Plano') {
+                                        const side = group === 'pieDer' ? 'PlanoDer' : 'PlanoIzq';
+                                        const el = document.getElementById('grados' + side);
+                                        if (el) el.classList.remove('hidden');
+                                    }
+                                }
+                            }
+                            if (val === true) {
+                                const c = document.getElementById(key);
+                                if (c) { c.checked = true; if (key === 'checkUrgente') toggleUrgente(); }
+                            }
+                        }
+                    });
+
+                    // Restore Canvas
+                    canvas.loadFromJSON(data.canvas, canvas.renderAll.bind(canvas));
+
+                    // Restore List
+                    document.getElementById('hallazgosList').innerHTML = '';
+                    data.listItems.forEach(item => {
+                        addListItem(item.id, item.text);
+                    });
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Error al cargar el archivo JSON");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- PDF GENERATION ---
+        // --- PDF GENERATION ---
+        async function generatePDF(type) {
+            const btn = event.currentTarget;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Generando...';
+            btn.disabled = true;
+
+            try {
+                const { jsPDF } = window.jspdf;
+                let finalDoc;
+
+                if (type === 'taller') {
+                    // --- HIDDEN TEMPLATE STRATEGY ---
+
+                    // 1. Convert Canvas to Grayscale (Temporary)
+                    const originalState = canvas.toJSON(['id', 'selectable', 'evented']);
+
+                    canvas.getObjects().forEach(obj => {
+                        if (obj.type === 'path' && obj.selectable === false) {
+                            // Background feet - keep generic styling
+                            // Already good (gray stroke)
+                        } else {
+                            // User markings: Force Black/Gray
+                            if (obj.stroke) obj.set({ stroke: '#000000' });
+                            if (obj.fill && obj.fill !== 'transparent') obj.set({ fill: '#e5e7eb' }); // Gray 200
+                        }
+                    });
+                    canvas.renderAll();
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
+                    // Restore Canvas Colors Immediately
+                    canvas.loadFromJSON(originalState, canvas.renderAll.bind(canvas));
+
+                    // 2. Populate Template
+                    document.getElementById('tpl-patient').textContent = "PACIENTE: " + (document.getElementById('pacienteNombre').value || "-");
+                    const edad = document.getElementById('pacienteEdad').value;
+                    const peso = document.getElementById('pacientePeso').value;
+                    const extraInfo = [edad ? edad + ' años' : '', peso ? peso + ' kg' : ''].filter(Boolean).join(' | ');
+                    if (extraInfo) {
+                        document.getElementById('tpl-patient').textContent += '  (' + extraInfo + ')';
+                    }
+                    document.getElementById('tpl-date').textContent = document.getElementById('fechaEntrega').value || "-";
+
+                    // Urgente
+                    const isUrgent = document.getElementById('checkUrgente').checked;
+                    const urgentLbl = document.getElementById('tpl-urgent');
+                    urgentLbl.style.display = isUrgent ? 'block' : 'none';
+
+                    // Datos calzado
+                    document.getElementById('tpl-talle').textContent = document.getElementById('numCalzado').value || '-';
+                    document.getElementById('tpl-material').textContent = document.getElementById('material').value || '-';
+                    const formatoVals = [...document.querySelectorAll('input[data-group="formato"]:checked')].map(c => c.value);
+                    document.getElementById('tpl-formato').textContent = formatoVals.length ? formatoVals.join(', ') : '-';
+                    const hormaVals = [...document.querySelectorAll('input[data-group="horma"]:checked')].map(c => c.value);
+                    document.getElementById('tpl-horma').textContent = hormaVals.length ? hormaVals.join(', ') : '-';
+
+                    document.getElementById('tpl-canvas-img').src = imgData;
+
+                    // 3. Generate Table
+                    const tbody = document.getElementById('tpl-table-body');
+                    tbody.innerHTML = "";
+                    findingsData.forEach((item, idx) => {
+                        const tr = document.createElement('tr');
+                        tr.style.background = idx % 2 === 0 ? '#fff' : '#f3f4f6';
+                        tr.innerHTML = `
+                            <td style="border:1px solid #555;padding:5px 8px;font-size:13px;">${item.side}</td>
+                            <td style="border:1px solid #555;padding:5px 8px;font-size:13px;font-weight:700;">${item.element}</td>
+                            <td style="border:1px solid #555;padding:5px 8px;font-size:13px;">${item.details}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    // FIX: Make template visible before capture (Safari requires visibility for html2canvas)
+                    const template = document.getElementById('print-template');
+                    template.style.visibility = 'visible';
+                    template.style.left = '-9999px';
+                    // Ensure it's rendered by browser even if off-screen
+                    const canvasBox = await html2canvas(template, {
+                        scale: 2,
+                        useCORS: true,
+                        // Force white background
+                        backgroundColor: '#ffffff',
+                        // FIX: logging false prevents Safari console errors
+                        logging: false
+                    });
+                    // Hide again after capture
+                    template.style.visibility = 'hidden';
+
+                    // 5. Create Half-Sheet PDF (A4 Portrait, Image on Top Half)
+                    finalDoc = new jsPDF('p', 'mm', 'a4');
+                    const imgProps = finalDoc.getImageProperties(canvasBox.toDataURL('image/jpeg', 0.95));
+                    const pdfWidth = finalDoc.internal.pageSize.getWidth(); // 210mm
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                    // Add image starting at top-left
+                    finalDoc.addImage(canvasBox.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 10, pdfWidth, pdfHeight);
+
+                } else {
+                    // --- FULL: SIMPLE & COMPLETE ---
+                    // Generate a clean summary page with header info & canvas image
+                    
+                    // 1. Convert Canvas to Image
+                    const originalState = canvas.toJSON(['id', 'selectable', 'evented']);
+                    canvas.getObjects().forEach(obj => {
+                        if (obj.type === 'path' && obj.selectable === false) {
+                            // Background feet - keep generic styling
+                        } else {
+                            if (obj.stroke) obj.set({ stroke: '#000000' });
+                            if (obj.fill && obj.fill !== 'transparent') obj.set({ fill: '#e5e7eb' });
+                        }
+                    });
+                    canvas.renderAll();
+                    const canvasImg = canvas.toDataURL('image/jpeg', 1.0);
+                    canvas.loadFromJSON(originalState, canvas.renderAll.bind(canvas));
+
+                    // 2. Create PDF with header + image
+                    finalDoc = new jsPDF('p', 'mm', 'a4');
+                    const pageWidth = finalDoc.internal.pageSize.getWidth();
+                    const pageHeight = finalDoc.internal.pageSize.getHeight();
+                    let yPos = 10;
+
+                    // Header Section
+                    finalDoc.setFont('Arial', 'bold');
+                    finalDoc.setFontSize(14);
+                    finalDoc.text('SIMÓN ORTOPEDIA - Orden de Trabajo', pageWidth / 2, yPos, { align: 'center' });
+                    yPos += 12;
+
+                    // Patient & Info
+                    finalDoc.setFont('Arial', 'normal');
+                    finalDoc.setFontSize(10);
+                    const paciente = document.getElementById('pacienteNombre').value || '-';
+                    const edad = document.getElementById('pacienteEdad').value || '-';
+                    const peso = document.getElementById('pacientePeso').value || '-';
+                    const fechaEntrega = document.getElementById('fechaEntrega').value || '-';
+                    const isUrgent = document.getElementById('checkUrgente').checked;
+
+                    finalDoc.text(`Paciente: ${paciente}`, 15, yPos);
+                    yPos += 6;
+                    finalDoc.text(`Edad: ${edad} años | Peso: ${peso} kg`, 15, yPos);
+                    yPos += 6;
+                    finalDoc.text(`Entrega: ${fechaEntrega}${isUrgent ? ' [⚠ URGENTE]' : ''}`, 15, yPos);
+                    yPos += 8;
+
+                    // Shoe Data
+                    finalDoc.setFont('Arial', 'bold');
+                    finalDoc.setFontSize(9);
+                    finalDoc.text('Datos del Calzado:', 15, yPos);
+                    yPos += 5;
+                    finalDoc.setFont('Arial', 'normal');
+                    const talle = document.getElementById('numCalzado').value || '-';
+                    const material = document.getElementById('material').value || '-';
+                    const formato = [...document.querySelectorAll('input[data-group="formato"]:checked')].map(c => c.value).join(', ') || '-';
+                    const horma = [...document.querySelectorAll('input[data-group="horma"]:checked')].map(c => c.value).join(', ') || '-';
+                    finalDoc.text(`Talle: ${talle} | Material: ${material}`, 15, yPos);
+                    yPos += 5;
+                    finalDoc.text(`Formato: ${formato} | Horma: ${horma}`, 15, yPos);
+                    yPos += 8;
+
+                    // Canvas Image
+                    const imgProps = finalDoc.getImageProperties(canvasImg);
+                    const imgWidth = pageWidth - 20;
+                    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+                    finalDoc.addImage(canvasImg, 'JPEG', 10, yPos, imgWidth, imgHeight);
+                    yPos += imgHeight + 8;
+
+                    // Findings Table
+                    if (findingsData.length > 0) {
+                        if (yPos + 20 > pageHeight) {
+                            finalDoc.addPage();
+                            yPos = 10;
+                        }
+                        finalDoc.setFont('Arial', 'bold');
+                        finalDoc.setFontSize(10);
+                        finalDoc.text('Indicaciones & Hallazgos:', 15, yPos);
+                        yPos += 8;
+
+                        // Simple table
+                        finalDoc.setFont('Arial', 'normal');
+                        finalDoc.setFontSize(9);
+                        findingsData.forEach((item, idx) => {
+                            if (yPos + 6 > pageHeight) {
+                                finalDoc.addPage();
+                                yPos = 10;
+                            }
+                            const text = `${item.side}: ${item.element} - ${item.details}`;
+                            finalDoc.text(`• ${text}`, 15, yPos);
+                            yPos += 6;
+                        });
+                    }
+                }
+
+                // --- MERGE IF NEEDED ---
+                if (type === 'full' && attachedPdfBuffer) {
+                    const pdfBytes = finalDoc.output('arraybuffer');
+                    const { PDFDocument } = window.PDFLib;
+                    const mergedPdf = await PDFDocument.create();
+
+                    // Load generated report
+                    const reportPdf = await PDFDocument.load(pdfBytes);
+                    const reportPages = await mergedPdf.copyPages(reportPdf, reportPdf.getPageIndices());
+                    reportPages.forEach(page => mergedPdf.addPage(page));
+
+                    // Load attachment
+                    const attachmentPdf = await PDFDocument.load(attachedPdfBuffer);
+                    const attachmentPages = await mergedPdf.copyPages(attachmentPdf, attachmentPdf.getPageIndices());
+                    attachmentPages.forEach(page => mergedPdf.addPage(page));
+
+                    const finalPdfBytes = await mergedPdf.save();
+                    if (isIOS() && navigator.share) {
+                        const pdfFileName = `FICHA_COMPLETA_${getSafeName()}.pdf`;
+                        const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+                        const file = new File([blob], pdfFileName, { type: 'application/pdf' });
+                        try {
+                            await navigator.share({ files: [file], title: pdfFileName });
+                        } catch (err) {
+                            if (err.name !== 'AbortError') {
+                                const url = URL.createObjectURL(blob);
+                                window.open(url, '_blank');
+                                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                            }
+                        }
+                    } else {
+                        downloadBlob(finalPdfBytes, `FICHA_COMPLETA_${getSafeName()}.pdf`, 'application/pdf');
+                    }
+
+                } else {
+                // --- SAVE / OPEN ---
+                if (isIOS() && navigator.share) {
+                    const pdfFileName = `FICHA_${type.toUpperCase()}_${getSafeName()}.pdf`;
+                    const pdfBytes = finalDoc.output('arraybuffer');
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    const file = new File([blob], pdfFileName, { type: 'application/pdf' });
+                    try {
+                        await navigator.share({ files: [file], title: pdfFileName });
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                            setTimeout(() => URL.revokeObjectURL(url), 10000);
+                        }
+                    }
+                } else {
+                    finalDoc.save(`FICHA_${type.toUpperCase()}_${getSafeName()}.pdf`);
+                }
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Error generando PDF: " + err.message);
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        function getSafeName() {
+            const name = document.getElementById('pacienteNombre').value;
+            return name ? name.replace(/[^a-z0-9]/gi, '_').toUpperCase() : 'SIN_NOMBRE';
+        }
+
+        // FIX: Detect iOS Safari (doesn't support blob download via <a> click)
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        async function downloadBlob(data, fileName, mimeType) {
+            const blob = new Blob([data], { type: mimeType });
+            if (isIOS() && navigator.share) {
+                const file = new File([blob], fileName, { type: mimeType });
+                try {
+                    await navigator.share({ files: [file], title: fileName });
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        const url = window.URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+                    }
+                }
+            } else {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+            }
+        }
+
+        // Ctrl+Z / Cmd+Z undo
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                undoCanvas();
+            }
+        });
+    </script>
+</body>
+
+</html>

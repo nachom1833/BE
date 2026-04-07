@@ -8,6 +8,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: siteUrl,
       lastModified: new Date(),
     },
+    {
+      url: `${siteUrl}/ortopedia.html`,
+      lastModified: new Date(),
+    },
     // add more routes if needed
   ];
 }
