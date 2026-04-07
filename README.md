@@ -2,31 +2,57 @@
 
 This is a Next.js 14 project built with the app router and Tailwind CSS.
 
-## Deployment to Vercel
+## 🚀 Deployment to Vercel
 
-1. Push this repository to GitHub (or another Git provider).
-2. Go to [Vercel](https://vercel.com) and import the project.
-3. Vercel will detect it as a Next.js app and use the default build settings (`npm run build`).
-4. Set the environment variable `SITE_URL` to the production URL (e.g. `https://yourdomain.com`) under **Settings > Environment Variables**.
+### Automatic Deployment (Recommended)
+1. Connect your GitHub repository to Vercel at [vercel.com](https://vercel.com)
+2. Vercel will automatically detect it as a Next.js app
+3. The build will use the default settings (`npm run build`)
+4. **No environment variables needed** - the app is configured to work out of the box
 
-## SEO & Search Preview
+### Manual Deployment
+```bash
+# Install Vercel CLI
+npm i -g vercel
 
-- Metadata (title, description, Open Graph and Twitter tags) are defined in `app/layout.tsx`.
-- A sitemap is automatically generated at `/sitemap.xml` via `app/sitemap.ts`.
-- A basic `robots.txt` is provided in the `public` folder.
+# Deploy
+vercel --prod
+```
 
-> Replace `yourdomain.com` with your actual domain once deployed.
+## 📄 Available Pages
 
-## Local development
+- **/** - Main BE Studio website
+- **/demo** - Demo page
+- **/ortopedia.html** - Gonzalo Simon Ortopedia Digital Form (standalone HTML)
+
+## 🔧 Configuration
+
+- **Framework**: Next.js 14 with App Router
+- **Styling**: Tailwind CSS with custom design system
+- **SEO**: Automatic sitemap generation and meta tags
+- **Performance**: Static generation and optimized images
+
+## 🌐 URLs
+
+- **Production**: https://be-studio-site.vercel.app
+- **Ortopedia Form**: https://be-studio-site.vercel.app/ortopedia.html
+
+## 🛠 Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Production build
+## 📦 Production Build
 
 ```bash
 npm run build
 npm start
 ```
+
+## 📋 SEO & Search
+
+- Metadata (title, description, Open Graph and Twitter tags) are defined in `app/layout.tsx`
+- Sitemap automatically generated at `/sitemap.xml`
+- Robots.txt configured for search engine crawling
