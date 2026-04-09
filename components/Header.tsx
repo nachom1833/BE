@@ -4,10 +4,6 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { ThemeSwitcher } from "@/components/ui/apple-liquid-glass-switcher";
-
-// note: the ThemeSwitcher component cycles between light/dark/dim.  
-// we'll map "dim" to dark fallback since next-themes doesn't support a third theme.
 
 
 export default function Header() {
@@ -22,6 +18,39 @@ export default function Header() {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const currentTheme = resolvedTheme === "dark" ? "dark" : "light";
+
+  const renderThemeButtons = () => (
+    <div className="inline-flex items-center gap-1 rounded-full border border-slate-300 p-1 dark:border-slate-700" role="group" aria-label="Theme selection">
+      <button
+        type="button"
+        onClick={() => setTheme("light")}
+        className={`rounded-full px-3 py-1 text-sm transition ${
+          currentTheme === "light"
+            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+            : "text-slate-700 dark:text-slate-200"
+        }`}
+        aria-label="Switch to light theme"
+        aria-pressed={currentTheme === "light"}
+      >
+        Light
+      </button>
+      <button
+        type="button"
+        onClick={() => setTheme("dark")}
+        className={`rounded-full px-3 py-1 text-sm transition ${
+          currentTheme === "dark"
+            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+            : "text-slate-700 dark:text-slate-200"
+        }`}
+        aria-label="Switch to dark theme"
+        aria-pressed={currentTheme === "dark"}
+      >
+        Dark
+      </button>
+    </div>
+  );
 
   return (
     <header
@@ -52,22 +81,7 @@ export default function Header() {
           >
             EN | ES
           </button>
-          {/* use our fancier theme switcher instead of a simple button */}
-          <div className="h-8">
-            <ThemeSwitcher
-              value={
-                resolvedTheme === "dark" ? "dark" : "light"
-              }
-              onValueChange={(val) => {
-                if (val === "dim") {
-                  // fallback to dark mode for now
-                  setTheme("dark");
-                } else {
-                  setTheme(val);
-                }
-              }}
-            />
-          </div>
+          {renderThemeButtons()}
           <Link
             href="#contact"
             className="rounded-full bg-accent px-5 py-2 text-sm font-medium text-white"
@@ -97,21 +111,7 @@ export default function Header() {
           <Link href="#contact" onClick={() => setMenuOpen(false)}>{t.nav.contact}</Link>
           <div className="flex items-center gap-4 pt-2">
             <button className="text-sm" onClick={() => setLocale(locale === "en" ? "es" : "en")}>EN | ES</button>
-            {/* mobile theme switcher: showing simple button here for brevity */}
-            <div className="h-8">
-              <ThemeSwitcher
-                value={
-                  resolvedTheme === "dark" ? "dark" : "light"
-                }
-                onValueChange={(val) => {
-                  if (val === "dim") {
-                    setTheme("dark");
-                  } else {
-                    setTheme(val);
-                  }
-                }}
-              />
-            </div>
+            {renderThemeButtons()}
             <Link href="#contact" className="rounded-full bg-accent px-4 py-2 text-sm font-medium text-white">
               {t.nav.talk}
             </Link>
