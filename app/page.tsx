@@ -4,11 +4,10 @@ import Hero from "@/components/Hero";
 
 const Capabilities = dynamic(() => import("@/components/Capabilities"));
 const Industries = dynamic(() => import("@/components/Industries"));
-const BEMethod = dynamic(() => import("@/components/BEMethod"));
+const Method = dynamic(() => import("@/components/Method"));
 const DataSection = dynamic(() => import("@/components/DataSection"));
 const CTA = dynamic(() => import("@/components/CTA"));
 const Footer = dynamic(() => import("@/components/Footer"));
-const DesignSystemExample = dynamic(() => import("@/components/DesignSystemExample"));
 
 export default function Home() {
   return (
@@ -18,11 +17,10 @@ export default function Home() {
         <Hero />
         <Capabilities />
         <Industries />
-        <BEMethod />
+        <Method />
         <DataSection />
         {/* <Projects /> */}
         <CTA />
-        <DesignSystemExample />
       </main>
       <Footer />
     </>
